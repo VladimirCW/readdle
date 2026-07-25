@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npx tsx -e \"require\\('dotenv'\\).config\\({ path: './environments/.env' }\\); const { testConfig } = require\\('./src/config/testConfig'\\); console.log\\('apiBaseUrl:', testConfig.apiBaseUrl\\); console.log\\('mailhogUrl:', testConfig.mailhogUrl\\); console.log\\('baseURL derived:', process.env.TEST_HOST + ':4444'\\);\")",
+      "PowerShell(npm run *)",
+      "PowerShell(npx playwright test --list 2>$null | Select-Object -First 8; npx playwright test --list | Measure-Object -Line | Select-Object -ExpandProperty Lines)",
+      "PowerShell(npx tsx -e \"const cfg = require\\('./playwright.config.ts'\\).default; console.log\\('workers from .env:', cfg.workers\\)\"; $env:WORKERS_AMOUNT='7'; npx tsx -e \"const cfg = require\\('./playwright.config.ts'\\).default; console.log\\('workers with shell override:', cfg.workers\\)\")",
+      "PowerShell(npx tsx -e \"require\\('dotenv'\\).config\\({ path: './environments/.env' }\\); const { AuthApiService } = require\\('./src/services'\\); \\(async \\(\\) => { const auth = new AuthApiService\\(\\); const r = await auth.signIn\\('test@test.test', '12345678'\\); console.log\\('signIn status:', r?.status, JSON.stringify\\(r?.data\\).slice\\(0, 200\\)\\); }\\)\\(\\)\")",
+      "PowerShell(npx tsx -e \"require\\('dotenv'\\).config\\({ path: './environments/.env' }\\); const { AuthApiService, MailhogService } = require\\('./src/services'\\); \\(async \\(\\) => { const auth = new AuthApiService\\(\\); const r = await auth.signUp\\('test@test.test', '12345678'\\); console.log\\('signUp status:', r?.status, JSON.stringify\\(r?.data\\).slice\\(0, 200\\)\\); }\\)\\(\\)\")",
+      "PowerShell(npx playwright test src/tests/ui/auth.spec.ts)",
+      "PowerShell(npx playwright test src/tests/ui)",
+      "PowerShell(Invoke-WebRequest -UseBasicParsing 'http://ec2-18-218-111-7.us-east-2.compute.amazonaws.com:4444/assets/app.js' -OutFile \"$env:TEMP\\\\claude\\\\app.js\"; \\(Get-Item \"$env:TEMP\\\\claude\\\\app.js\"\\).Length)"
+    ]
+  }
+}

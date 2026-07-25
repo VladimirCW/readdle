@@ -1,0 +1,9 @@
+node_modules
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/environments/.env
+.eslintcache
+# for my personal usage, need separate docker folder
+/docker/

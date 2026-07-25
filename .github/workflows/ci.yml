@@ -1,0 +1,111 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+  # Nightly run against the deployed instance (07:00 UTC). Adjust/remove as needed.
+  schedule:
+    - cron: '0 7 * * *'
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Target the deployed instance. Override per environment with repository
+# Variables (Settings → Secrets and variables → Actions → Variables) —
+# no secrets are required to run against the public demo instance.
+env:
+  API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+  BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+  MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
+  LOG_LEVEL: info
+
+jobs:
+  api-tests:
+    name: API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # No browsers needed — the API suite is pure HTTP (Playwright request + axios).
+      - name: Run API tests
+        run: npx playwright test src/tests/api
+
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-api
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload traces & screenshots
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-api
+          path: test-results/
+          retention-days: 7
+
+  ui-tests:
+    name: UI E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI E2E tests
+        run: npx playwright test src/tests/ui --workers=2
+
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-ui
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload traces & screenshots
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ui
+          path: test-results/
+          retention-days: 7

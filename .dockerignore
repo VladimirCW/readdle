@@ -1,0 +1,19 @@
+# Installed fresh inside the image (local copy is host-platform specific)
+node_modules
+
+# Generated test output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Local config / secrets — pass via `docker run -e` instead
+/environments/.env
+.eslintcache
+
+# VCS / tooling / docker meta
+.git
+.github
+.vscode
+Dockerfile
+.dockerignore
