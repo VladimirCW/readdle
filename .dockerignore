@@ -9,6 +9,7 @@ node_modules
 
 # Local config / secrets — pass via `docker run -e` instead
 /environments/.env
+/environments/.*.env
 .eslintcache
 
 # VCS / tooling / docker meta

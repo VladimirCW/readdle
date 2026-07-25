@@ -4,6 +4,8 @@ node_modules
 /blob-report/
 /playwright/.cache/
 /environments/.env
+# local per-environment dotenv files (sources for DOTENV_B64_* secrets)
+/environments/.*.env
 .eslintcache
 # for my personal usage, need separate docker folder
 /docker/

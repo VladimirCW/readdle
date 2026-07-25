@@ -1,0 +1,60 @@
+name: Test summary
+
+# Runs automatically after the "Tests" workflow finishes and publishes a summary
+# (passed / failed / flaky / skipped counts per suite + the list of failed tests)
+# to this run's GitHub Summary page.
+#
+# It reads the Playwright JSON reports that "Tests" uploads inside the
+# `playwright-report-api` / `playwright-report-ui` artifacts (produced by the
+# CI-only 'json' reporter in playwright.config.ts), so no test re-run is needed.
+#
+# NOTE: workflow_run only fires for workflow files that live on the repo's
+# DEFAULT branch — a copy on a non-default branch would not trigger.
+
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Pull the JSON reports from the run that triggered us. continue-on-error so
+      # a missing artifact (e.g. a job crashed before reporting) still lets the
+      # parse step emit a friendly "no report" summary for that suite.
+      - name: Download API report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-api
+          path: reports/api
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download UI report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-ui
+          path: reports/ui
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build summary
+        env:
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ACTOR: ${{ github.event.workflow_run.actor.login }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: node .github/scripts/pw-summary.mjs "API=reports/api/report.json" "UI E2E=reports/ui/report.json"

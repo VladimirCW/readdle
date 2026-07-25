@@ -22,8 +22,16 @@ export default defineConfig({
     /* Worker count from WORKERS_AMOUNT (environments/.env); unset falls back
        to Playwright's default (half the CPU cores). */
     workers: process.env['WORKERS_AMOUNT'] ? Number(process.env['WORKERS_AMOUNT']) : undefined,
+    /* On CI, additionally emit a JSON report (playwright-report/report.json);
+       it is parsed by the "Test summary" workflow. Keep 'json' listed after
+       'html' — the HTML reporter clears its output folder when it writes. */
     reporter: process.env.CI
-        ? [['github'], ['list'], ['html', { open: 'never' }]]
+        ? [
+              ['github'],
+              ['list'],
+              ['html', { open: 'never' }],
+              ['json', { outputFile: 'playwright-report/report.json' }],
+          ]
         : [['list'], ['html', { open: 'never' }]],
     /* 5-minute per-test timeout (override with TEST_TIMEOUT_IN_MINUTES). */
     timeout:

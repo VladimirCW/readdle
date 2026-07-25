@@ -139,7 +139,9 @@ src/
     api/          # *.spec.ts — one file per endpoint group
     ui/           # *.spec.ts — one file per user flow
 environments/     # .env / .env.example
-.github/workflows/ci.yml
+.github/
+  workflows/      # ci.yml (tests, manual trigger) + test-summary.yml
+  scripts/        # pw-summary.mjs (run summary) + set-dotenv-secret.ps1 (upload DOTENV_B64_* secret)
 documentation/
   TEST_CASES.md   # the reviewable test-case catalogue + status
 ```
@@ -160,10 +162,50 @@ Notes created during tests are cleaned up (by id or by unique marker) in teardow
 GitHub Actions — [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 
 - Two parallel jobs: **api-tests** (no browser) and **ui-tests** (cached Chromium, 2 workers).
-- Triggers: push & PR to `main`, manual `workflow_dispatch`, and a nightly schedule.
-- Target URLs come from repository **Variables** (fall back to the deployed instance) — no secrets needed.
-- `CI=true` enables one retry (absorbs transient blips on the shared instance) and a GitHub reporter for inline annotations.
+- Triggers: **manual only** (`workflow_dispatch` — Actions tab or `gh workflow run Tests`); automatic runs on push/PR/schedule are intentionally disabled.
+- Configuration: each job materializes `environments/.env` before the run — from the per-environment secret `DOTENV_B64_<APP_ENV>` when it exists (the whole `.env` file, base64-encoded, e.g. `base64 -w0 environments/.env`; `<APP_ENV>` is chosen by the `app_env` dispatch input, default `DEMO`), otherwise from repository **Variables** / the deployed-instance defaults — no secrets needed for the public demo instance.
+- The optional `test_host` dispatch input retargets a single run at another instance (scheme + host, no port — `:4444`/`:8025` URLs are derived from it). It is exported as real env vars, so it takes precedence over everything: the `DOTENV_B64` secret, repository Variables, and the defaults.
+- `CI=true` enables one retry (absorbs transient blips on the shared instance), a GitHub reporter for inline annotations, and a JSON report (`playwright-report/report.json`).
 - Artifacts: HTML report per job, plus traces/screenshots on failure.
+- After each run, a companion **Test summary** workflow ([`test-summary.yml`](.github/workflows/test-summary.yml)) parses the uploaded JSON reports via [`pw-summary.mjs`](.github/scripts/pw-summary.mjs) and publishes per-suite pass/fail/flaky/skipped counts plus the list of failed tests to its run's Summary page — no test re-run needed. (`workflow_run` only fires for workflow files on the repo's default branch.)
+
+### `DOTENV_B64_<APP_ENV>` — per-environment config secret
+
+Each job builds `environments/.env` before the run from a per-environment repo secret, and `dotenv` loads that file in `playwright.config.ts` — so when the secret exists it fully drives the run's configuration (URLs, accounts, log level; see [Configuration](#configuration)). Use it for run-time config that must not live in the repo.
+
+- **Name:** `DOTENV_B64_<APP_ENV>` — the suffix is exactly the `app_env` you pick at dispatch, e.g. the default `DEMO` → `DOTENV_B64_DEMO`, `STAGE` → `DOTENV_B64_STAGE`. GitHub secret names allow only letters, digits and underscores, so keep `app_env` values to that alphabet.
+- **Value:** the whole `.env` contents, **base64-encoded** (a single opaque line — avoids newline/quoting issues and stays cleanly masked in logs).
+- **Optional per env:** if the secret for the selected environment isn't set, the run falls back to repository **Variables** / the deployed-instance defaults — so you can adopt secrets one environment at a time.
+
+Create / update the secret (needs the [GitHub CLI](https://cli.github.com/) with repo admin, `gh auth login`). Put the local dotenv file at `environments/.<APP_ENV>.env` (gitignored, so it never gets committed), then run the helper script — it reads that file (falling back to `environments/.env`), base64-encodes it, and sets `DOTENV_B64_<APP_ENV>` in one shot (contents never logged, only a byte count):
+
+```powershell
+# PowerShell. Arg = the app_env; runnable from any directory.
+.\.github\scripts\set-dotenv-secret.ps1 DEMO
+.\.github\scripts\set-dotenv-secret.ps1 -AppEnv STAGE -Path C:\tmp\stage.env   # override source file
+```
+
+<details>
+<summary>Manual equivalents (if you'd rather not use the script)</summary>
+
+```powershell
+# PowerShell
+$appEnv = 'DEMO'
+$b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("environments\.$appEnv.env"))
+$b64 | gh secret set "DOTENV_B64_$appEnv"
+```
+
+```bash
+# bash / Linux / macOS
+appEnv=DEMO
+base64 -w0 "environments/.$appEnv.env" | gh secret set "DOTENV_B64_$appEnv"
+```
+
+Or via the GitHub UI: **Settings → Secrets and variables → Actions → New repository secret** — name it `DOTENV_B64_<APP_ENV>` and paste the base64 string as the value.
+
+</details>
+
+**Onboarding a new environment:** create `DOTENV_B64_<newEnv>` as above, then dispatch **Tests** with `app_env: <newEnv>` — the dynamic secret lookup in [`ci.yml`](.github/workflows/ci.yml) keys off exactly that value.
 
 ## Findings
 

@@ -1,28 +1,35 @@
 name: Tests
 
+# Manual runs only — trigger from the Actions tab or `gh workflow run Tests`.
+# Automatic triggers (push / PR / schedule) are intentionally disabled.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch: {}
-  # Nightly run against the deployed instance (07:00 UTC). Adjust/remove as needed.
-  schedule:
-    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      app_env:
+        description: 'Environment key — selects the DOTENV_B64_<APP_ENV> secret holding environments/.env (base64). If that secret is not set, repository Variables / deployed-instance defaults are used.'
+        required: false
+        default: 'DEMO'
+      test_host:
+        description: 'Override TEST_HOST for this run — scheme + host of the instance under test, no port (e.g. http://10.0.0.5); app/API :4444 and MailHog :8025 URLs are derived from it. Takes precedence over the DOTENV_B64 secret and repository Variables. Blank = no override.'
+        required: false
+        default: ''
 
 # Cancel superseded runs on the same ref.
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Target the deployed instance. Override per environment with repository
-# Variables (Settings → Secrets and variables → Actions → Variables) —
-# no secrets are required to run against the public demo instance.
+# Test configuration is materialized into environments/.env by the "Write
+# environments/.env" step in each job — either from the per-environment secret
+# DOTENV_B64_<APP_ENV> (the whole file, base64-encoded), or from repository
+# Variables / the deployed-instance defaults when that secret is not set.
+# No secrets are required to run against the public demo instance.
+#
+# NOTE: the target URLs are intentionally NOT workflow-level `env:` vars —
+# dotenv never overrides real environment variables, so workflow-level values
+# would silently shadow everything in a secret-provided .env file.
 env:
-  API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-  BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-  MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
-  LOG_LEVEL: info
+  APP_ENV: ${{ github.event.inputs.app_env || 'DEMO' }}
 
 jobs:
   api-tests:
@@ -40,6 +47,43 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Materialize environments/.env (loaded by dotenv in playwright.config.ts):
+      # from the per-environment secret DOTENV_B64_<APP_ENV> when it exists — the
+      # whole .env file, base64-encoded (create with `base64 -w0 environments/.env`)
+      # — otherwise from repository Variables / the deployed-instance defaults.
+      - name: Write environments/.env from secret
+        env:
+          DOTENV_B64: ${{ secrets[format('DOTENV_B64_{0}', env.APP_ENV)] }}
+          TEST_HOST_INPUT: ${{ github.event.inputs.test_host }}
+          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
+        run: |
+          if [ -n "$DOTENV_B64" ]; then
+            printf '%s' "$DOTENV_B64" | base64 -d > environments/.env
+            echo "Wrote environments/.env from secret DOTENV_B64_${APP_ENV} ($(wc -c < environments/.env) bytes) — contents not logged"
+          else
+            echo "Secret DOTENV_B64_${APP_ENV} not set — using repository Variables / deployed-instance defaults"
+            {
+              echo "API_BASE_URL=${FALLBACK_API_BASE_URL}"
+              echo "BASE_URL=${FALLBACK_BASE_URL}"
+              echo "MAILHOG_URL=${FALLBACK_MAILHOG_URL}"
+              echo "LOG_LEVEL=info"
+            } > environments/.env
+          fi
+          # test_host input override — exported via GITHUB_ENV so it becomes a REAL
+          # env var in later steps: real env vars always beat the .env file (dotenv
+          # never overrides them), including a secret-provided API_BASE_URL/BASE_URL.
+          if [ -n "$TEST_HOST_INPUT" ]; then
+            {
+              echo "TEST_HOST=${TEST_HOST_INPUT}"
+              echo "API_BASE_URL=${TEST_HOST_INPUT}:4444"
+              echo "BASE_URL=${TEST_HOST_INPUT}:4444"
+              echo "MAILHOG_URL=${TEST_HOST_INPUT}:8025"
+            } >> "$GITHUB_ENV"
+            echo "test_host input override: ${TEST_HOST_INPUT} — takes precedence over the .env file"
+          fi
 
       # No browsers needed — the API suite is pure HTTP (Playwright request + axios).
       - name: Run API tests
@@ -76,6 +120,41 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Same env materialization as in api-tests (GitHub Actions has no YAML
+      # anchors, so the step is duplicated) — see the comment there.
+      - name: Write environments/.env from secret
+        env:
+          DOTENV_B64: ${{ secrets[format('DOTENV_B64_{0}', env.APP_ENV)] }}
+          TEST_HOST_INPUT: ${{ github.event.inputs.test_host }}
+          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
+        run: |
+          if [ -n "$DOTENV_B64" ]; then
+            printf '%s' "$DOTENV_B64" | base64 -d > environments/.env
+            echo "Wrote environments/.env from secret DOTENV_B64_${APP_ENV} ($(wc -c < environments/.env) bytes) — contents not logged"
+          else
+            echo "Secret DOTENV_B64_${APP_ENV} not set — using repository Variables / deployed-instance defaults"
+            {
+              echo "API_BASE_URL=${FALLBACK_API_BASE_URL}"
+              echo "BASE_URL=${FALLBACK_BASE_URL}"
+              echo "MAILHOG_URL=${FALLBACK_MAILHOG_URL}"
+              echo "LOG_LEVEL=info"
+            } > environments/.env
+          fi
+          # test_host input override — exported via GITHUB_ENV so it becomes a REAL
+          # env var in later steps: real env vars always beat the .env file (dotenv
+          # never overrides them), including a secret-provided API_BASE_URL/BASE_URL.
+          if [ -n "$TEST_HOST_INPUT" ]; then
+            {
+              echo "TEST_HOST=${TEST_HOST_INPUT}"
+              echo "API_BASE_URL=${TEST_HOST_INPUT}:4444"
+              echo "BASE_URL=${TEST_HOST_INPUT}:4444"
+              echo "MAILHOG_URL=${TEST_HOST_INPUT}:8025"
+            } >> "$GITHUB_ENV"
+            echo "test_host input override: ${TEST_HOST_INPUT} — takes precedence over the .env file"
+          fi
 
       - name: Get Playwright version
         id: pw
