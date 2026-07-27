@@ -7,9 +7,8 @@ Automated **API** and **UI E2E** test suites for the notes application (Symfony 
 
 The full, reviewable list of scenarios lives in **[TEST_CASES.md](documentation/TEST_CASES.md)** (also documents the automation status and the defects found).
 
-<!-- Once pushed to GitHub, replace <owner>/<repo> to enable the badge:
-![Tests](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg)
--->
+[![Tests](https://github.com/VladimirCW/readdle/actions/workflows/ci.yml/badge.svg)](https://github.com/VladimirCW/readdle/actions/workflows/ci.yml)
+[![Test summary](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml/badge.svg)](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml)
 
 ## Application under test
 
@@ -111,6 +110,22 @@ docker run --rm \
 
 `environments/.env` is intentionally **not** copied into the image (a `COPY`'d env file would bake credentials into image layers and freeze configuration at build time). Configure the container at run time instead: individual `-e` variables, `--env-file`, or a read-only mount, as shown above (see [Configuration](#configuration) for the variable list). Note that Docker's `--env-file` parses values literally (no quote stripping, unlike dotenv) — the `.env.example` format is compatible.
 
+### Targeting an app running on your laptop (localhost)
+
+Inside a container, `localhost` / `127.0.0.1` refers to the **container itself**, not your machine — so `TEST_HOST=http://localhost` would make the tests look for the app inside the container and fail with connection-refused errors. To reach an app running on the host, use Docker's special hostname for it:
+
+```bash
+docker run --rm -e TEST_HOST=http://host.docker.internal readdle-tests
+```
+
+`TEST_HOST` stays scheme + host with no port — the app URL (`:4444`) and MailHog URL (`:8025`) are derived from it, and both route back to the host's localhost.
+
+Keep the two audiences separate: in `environments/.env` (local runs) use `http://localhost` or `http://127.0.0.1`; for Docker runs pass `host.docker.internal` via `-e` as above. Don't put `host.docker.internal` into `.env` — it doesn't resolve outside containers, and the file isn't copied into the image anyway.
+
+> **Notes:**
+> - `host.docker.internal` works out of the box on Docker Desktop (Windows/macOS). On plain Linux, add `--add-host=host.docker.internal:host-gateway` to `docker run`, or use `--network host` so plain `localhost` works.
+> - The app and MailHog must accept connections from the Docker network (listening on `0.0.0.0`, not bound strictly to `127.0.0.1`) — check this first if the connection is refused.
+
 ## Results (latest local run)
 
 | Suite | Result |
@@ -121,6 +136,10 @@ docker run --rm \
 - The 2 API skips (`API-CF-05` code expiry, `API-ME-04` expired JWT) require time control not available against the deployed instance — see [TEST_CASES.md §8.1](documentation/TEST_CASES.md).
 - One case (`API-NC-11`) is intentionally marked *expected-to-fail* to encode a real open defect (see [Findings](#findings)); the suite stays green while keeping the bug visible.
 - After each run, an HTML report is written to `playwright-report/` (`npm run report` to open); traces/screenshots for failures land in `test-results/`.
+
+### Results in CI
+
+Every CI run of **Tests** is followed by the **[Test summary](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml)** workflow, which publishes passed / failed / flaky / skipped counts per suite (plus the list of failed tests) to its run's **Summary** page. GitHub has no permalink to "the latest summary", but that link lists runs newest-first — open the top run to see the latest one. The Playwright HTML reports are attached to the corresponding **Tests** run as the `playwright-report-api` / `playwright-report-ui` artifacts.
 
 ## Project structure
 

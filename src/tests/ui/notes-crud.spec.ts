@@ -64,7 +64,7 @@ test.describe('UI · Notes CRUD', () => {
 
         await notes.createNote(title, 'original');
         await notes.openEditModal(title);
-        await notes.modal().locator('input[name="title"]').fill(`${title}-should-not-save`);
+        await notes.modal.titleInput.fill(`${title}-should-not-save`);
         await notes.cancelModal();
 
         await expect(notes.card(title)).toBeVisible();

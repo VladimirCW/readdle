@@ -1,7 +1,7 @@
 {
   "name": "readdle",
   "version": "1.0.0",
-  "description": "Playwright smoke tests (minimal element-interaction layer extracted from QA/Playwright)",
+  "description": "Playwright smoke tests",
   "scripts": {
     "test": "npm run test:api && npm run test:e2e",
     "test:all": "playwright test src/tests/api src/tests/ui",

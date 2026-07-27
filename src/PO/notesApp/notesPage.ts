@@ -1,6 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 import { AccountPage } from './accountPage';
-import { Button, Input, Label } from '../../controlers';
+import { Button, Input, Label, Modal } from '../../controlers';
 import { UI } from '../../data/constants';
 
 export type SortOption = 'updated_desc' | 'updated_asc' | 'title_asc' | 'title_desc';
@@ -19,6 +19,7 @@ export class NotesPage extends AccountPage {
     readonly prevPage = this.generate(Button, '#notes-prev-page', { elementName: 'Prev Page' });
     readonly nextPage = this.generate(Button, '#notes-next-page', { elementName: 'Next Page' });
     readonly notesList = this.generate(Label, '#notes-list', { elementName: 'Notes List' });
+    readonly modal = this.generate(Modal, '.modal-backdrop', { elementName: 'Modal' });
 
     constructor(page: Page) {
         super(page, UI.paths.notes);
@@ -98,19 +99,19 @@ export class NotesPage extends AccountPage {
     async openEditModal(title: string): Promise<void> {
         this.logStep(`open edit modal for '${title}'`);
         await this.card(title).locator('[data-action="edit"]').click();
-        await this.modal().waitFor({ state: 'visible' });
+        await this.modal.locator.waitFor({ state: 'visible' });
     }
 
     async submitEdit(newTitle: string, newContent: string): Promise<void> {
-        const modal = this.modal();
-        await modal.locator('input[name="title"]').fill(newTitle);
+        const modal = this.modal.locator;
+        await this.modal.titleInput.fill(newTitle);
         await modal.locator('textarea[name="content"]').fill(newContent);
         await modal.locator('button[type="submit"]').click();
         await modal.waitFor({ state: 'detached' });
     }
 
     async cancelModal(): Promise<void> {
-        const modal = this.modal();
+        const modal = this.modal.locator;
         await modal.locator('[data-action="cancel"]').click();
         await modal.waitFor({ state: 'detached' });
     }
@@ -119,16 +120,12 @@ export class NotesPage extends AccountPage {
     async openDeleteModal(title: string): Promise<void> {
         this.logStep(`open delete modal for '${title}'`);
         await this.card(title).locator('[data-action="delete"]').click();
-        await this.modal().waitFor({ state: 'visible' });
+        await this.modal.locator.waitFor({ state: 'visible' });
     }
 
     async confirmDelete(): Promise<void> {
-        const modal = this.modal();
+        const modal = this.modal.locator;
         await modal.locator('[data-action="delete"]').click();
         await modal.waitFor({ state: 'detached' });
-    }
-
-    modal(): Locator {
-        return this.page.locator('.modal-backdrop');
     }
 }

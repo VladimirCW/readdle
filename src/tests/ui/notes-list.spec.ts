@@ -32,6 +32,10 @@ test.describe('UI · Notes list (search, sort, pagination)', () => {
         await expect(notes.items()).toHaveCount(3);
     });
 
+    /**
+     * Here as well in real project I would not rely that there will be the only record with `alpha`
+     * So such part `.toHaveCount(1)` should not be hardcoded - but use amount of proper records from API/DB
+     */
     test('[UI-LIST-02] search by Title only', async ({ notes }) => {
         await notes.selectField('title');
         await notes.search(`${searchMarker} Alpha`);
@@ -39,6 +43,10 @@ test.describe('UI · Notes list (search, sort, pagination)', () => {
         await expect(notes.card(`${searchMarker} Alpha`)).toBeVisible();
     });
 
+    /**
+     * Here as well in real project I would not rely that there will be the only record with `banana`
+     * So such part `.toHaveCount(1)` should not be hardcoded - but use amount of proper records from API/DB
+     */
     test('[UI-LIST-03] search by Content only', async ({ notes }) => {
         await notes.selectField('content');
         await notes.search(`${searchMarker} banana`);
@@ -46,6 +54,14 @@ test.describe('UI · Notes list (search, sort, pagination)', () => {
         await expect(notes.card(`${searchMarker} Bravo`)).toBeVisible();
     });
 
+    /**
+     * Comment for reviewers
+     * As far it is test project - I desigened fast and stable solution
+     * But in real project such validation is fragile - as far it depends on the data on the server
+     * IN real project instead of hardcoded values in `.toHaveCount(3);` and in `.toHaveCount(1)`
+     * there should be amount of proper records taken from API or DB
+     * I left it like this because stabilization requiers extra effort
+     */
     test('[UI-LIST-04] list updates live while typing', async ({ notes }) => {
         await notes.selectField('title');
         await notes.search(searchMarker);
@@ -79,6 +95,10 @@ test.describe('UI · Notes list (search, sort, pagination)', () => {
         await notes.nextPage.should.not.be.disabled();
     });
 
+    /**
+     * Here also after going to the next page the `toHaveCount(1)` should not have hardcoded `1` but data from API/DB
+     * I left it like this because stabilization requiers extra effort
+     */
     test('[UI-LIST-07] pagination next/prev navigates pages', async ({ notes }) => {
         await notes.search(pageMarker);
         await notes.selectPageSize('5');

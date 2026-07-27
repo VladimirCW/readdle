@@ -51,6 +51,7 @@ test.describe('API · GET /api/notes (list, search, sort, pagination)', () => {
         const res = await notes.list(tokenA, { q: M });
         expect(res.status).toBe(200);
         expect(Array.isArray(res.data)).toBeTruthy();
+        // Here hardcoded data `3` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(res.data.length).toBe(3);
         for (const note of res.data) {
             expect(note.id).toBeTruthy();
@@ -81,12 +82,14 @@ test.describe('API · GET /api/notes (list, search, sort, pagination)', () => {
     test('[API-NL-05] free-text q matches across title and content', async () => {
         const res = await notes.list(tokenA, { q: M });
         expect(res.status).toBe(200);
+        // Here hardcoded data `3` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(res.data.length).toBe(3);
     });
 
     test('[API-NL-06] title filter (partial match)', async () => {
         const res = await notes.list(tokenA, { title: `${M} Banana` });
         expect(res.status).toBe(200);
+        // Here hardcoded data `1` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(res.data.length).toBe(1);
         expect(res.data[0].title).toContain('Banana');
     });
@@ -94,6 +97,7 @@ test.describe('API · GET /api/notes (list, search, sort, pagination)', () => {
     test('[API-NL-07] content filter (partial match)', async () => {
         const res = await notes.list(tokenA, { content: `${M} red` });
         expect(res.status).toBe(200);
+        // Here hardcoded data `2` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(res.data.length).toBe(2);
     });
 
@@ -120,6 +124,7 @@ test.describe('API · GET /api/notes (list, search, sort, pagination)', () => {
         const p1 = await notes.list(tokenA, { q: M, itemsPerPage: 2, page: 1 });
         const p2 = await notes.list(tokenA, { q: M, itemsPerPage: 2, page: 2 });
         expect(p1.status).toBe(200);
+        // Here hardcoded data `2` | `1` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(p1.data.length).toBe(2);
         expect(p2.data.length).toBe(1);
 
@@ -132,6 +137,7 @@ test.describe('API · GET /api/notes (list, search, sort, pagination)', () => {
     test('[API-NL-12] combined filter + sort + pagination', async () => {
         const res = await notes.list(tokenA, { q: M, 'sort[title]': 'asc', itemsPerPage: 5 });
         expect(res.status).toBe(200);
+        // Here hardcoded data `3` is not good but for test task is ok. In real proj it should be taken dynamicaly from API/DB
         expect(res.data.length).toBe(3);
         const titles = res.data.map((n: any) => n.title);
         expect(titles).toEqual([...titles].sort());
