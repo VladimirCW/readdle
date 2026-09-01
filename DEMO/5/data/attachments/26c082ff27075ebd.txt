@@ -1,0 +1,9 @@
+[09-01T13:15:41][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/signin'
+[09-01T13:15:41][ INFO] [NotesPage_____________________] create note 'UI-XSS-1fe662ba-38b1-4bfa-b62a-4b5d32f6b3ab <img src=x onerror="window.__xssExecuted=true">'
+[09-01T13:15:41][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-XSS-1fe662ba-38b1-4bfa-b62a-4b5d32f6b3ab <img src=x onerror="window.__xssExecuted=true">'
+[09-01T13:15:41][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: '<img src=x onerror="window.__xssExecuted=true"> body'
+[09-01T13:15:41][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:15:41][ INFO] [NotesPage_____________________] search 'UI-XSS-1fe662ba-38b1-4bfa-b62a-4b5d32f6b3ab'
+[09-01T13:15:41][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-XSS-1fe662ba-38b1-4bfa-b62a-4b5d32f6b3ab'
+[09-01T13:15:42][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'
+[09-01T13:15:42][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/39e3fefe-3a81-4dd1-b030-af4fee206fae'

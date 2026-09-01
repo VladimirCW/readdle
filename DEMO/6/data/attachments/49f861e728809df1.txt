@@ -1,0 +1,6 @@
+[09-01T13:26:41][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Notes'
+[09-01T13:26:41][ INFO] [NotesPage_____________________] open profile
+[09-01T13:26:41][ INFO] [NotesPage_____________________] Nav Profile-------------------------- - click
+[09-01T13:26:41][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Profile'
+[09-01T13:26:41][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Notes'
+[09-01T13:26:41][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Profile'

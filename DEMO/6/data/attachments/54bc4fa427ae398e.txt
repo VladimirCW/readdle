@@ -1,0 +1,4 @@
+[09-01T13:26:34][ INFO] [NotesPage_____________________] search 'UI-LS-81a4557d-290d-4bb1-b5d9-f08ebdb479d5'
+[09-01T13:26:34][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-LS-81a4557d-290d-4bb1-b5d9-f08ebdb479d5'
+[09-01T13:26:34][ INFO] [NotesPage_____________________] select sort 'title_asc'
+[09-01T13:26:34][ INFO] [NotesPage_____________________] select sort 'title_desc'

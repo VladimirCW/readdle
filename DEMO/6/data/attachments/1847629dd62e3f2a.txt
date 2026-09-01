@@ -1,0 +1,8 @@
+[09-01T13:26:02][ INFO] [AuthPage______________________] go to URL: 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/'
+[09-01T13:26:03][ INFO] [AuthPage______________________] sign in as 'aqa-account-ui@example.com'
+[09-01T13:26:03][ INFO] [AuthPage______________________] Sign In Email------------------------ - fill: 'aqa-account-ui@example.com'
+[09-01T13:26:03][ INFO] [AuthPage______________________] Sign In Password--------------------- - fill: 'Passw0rd123!'
+[09-01T13:26:03][ INFO] [AuthPage______________________] Sign In Submit----------------------- - click
+[09-01T13:26:03][ INFO] [NotesPage_____________________] Account Section---------------------- - [WAIT] [TO] [BE] visible
+[09-01T13:26:04][ INFO] [NotesPage_____________________] Status------------------------------- - [SHOULD] text contains string 'Signed in.'
+[09-01T13:26:04][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Notes'

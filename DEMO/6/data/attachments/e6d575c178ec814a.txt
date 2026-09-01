@@ -1,0 +1,9 @@
+[09-01T13:26:28][ INFO] [NotesPage_____________________] create note 'UI-N07-c726434b-7c48-4711-bcb5-779c39ffb9c2'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N07-c726434b-7c48-4711-bcb5-779c39ffb9c2'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: 'x'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:26:28][ INFO] [NotesPage_____________________] search 'UI-N07-c726434b-7c48-4711-bcb5-779c39ffb9c2'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-N07-c726434b-7c48-4711-bcb5-779c39ffb9c2'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] open delete modal for 'UI-N07-c726434b-7c48-4711-bcb5-779c39ffb9c2'
+[09-01T13:26:28][ INFO] [NotesPage_____________________] Notes List--------------------------- - [SHOULD] text contains string 'No notes found.'
+[09-01T13:26:28][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'

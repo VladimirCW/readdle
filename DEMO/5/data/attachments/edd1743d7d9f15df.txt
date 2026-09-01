@@ -1,0 +1,5 @@
+[09-01T13:15:39][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/signin'
+[09-01T13:15:39][ INFO] [NotesPage_____________________] open profile
+[09-01T13:15:39][ INFO] [NotesPage_____________________] Nav Profile-------------------------- - click
+[09-01T13:15:39][ INFO] [ProfilePage___________________] Profile View------------------------- - [WAIT] [TO] [BE] visible
+[09-01T13:15:40][ INFO] [ProfilePage___________________] Profile Email------------------------ - [SHOULD] text contains string 'aqa-account-ui@example.com'

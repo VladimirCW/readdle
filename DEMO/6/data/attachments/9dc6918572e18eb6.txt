@@ -1,0 +1,5 @@
+[09-01T13:26:35][ INFO] [NotesPage_____________________] search 'UI-LP-e399c20a-1e89-40dc-bc05-10a7b02c8dc0'
+[09-01T13:26:35][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-LP-e399c20a-1e89-40dc-bc05-10a7b02c8dc0'
+[09-01T13:26:35][ INFO] [NotesPage_____________________] select page size '5'
+[09-01T13:26:35][ INFO] [NotesPage_____________________] Prev Page---------------------------- - [SHOULD] [BE] disabled
+[09-01T13:26:35][ INFO] [NotesPage_____________________] Next Page---------------------------- - [SHOULD] [NOT] [BE] disabled

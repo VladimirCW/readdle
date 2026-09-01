@@ -1,0 +1,4 @@
+[09-01T13:26:22][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N02-f3c9f5df-44c8-4d37-b52d-39978ad0907a'
+[09-01T13:26:22][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:26:22][ INFO] [NotesPage_____________________] Status------------------------------- - [SHOULD] text contains string 'required'
+[09-01T13:26:22][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'

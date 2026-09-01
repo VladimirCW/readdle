@@ -1,0 +1,4 @@
+[09-01T13:15:21][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/signin'
+[09-01T13:15:22][ INFO] [NotesPage_____________________] go to URL: 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/account/notes'
+[09-01T13:15:23][ INFO] [NotesPage_____________________] Account Section---------------------- - [WAIT] [TO] [BE] visible
+[09-01T13:15:23][ INFO] [NotesPage_____________________] Account Section---------------------- - [WAIT] [TO] [BE] visible

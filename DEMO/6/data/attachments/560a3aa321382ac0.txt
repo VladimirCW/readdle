@@ -1,0 +1,2 @@
+[09-01T13:26:18][ INFO] [AuthPage______________________] Auth Section------------------------- - [WAIT] [TO] [BE] visible
+[09-01T13:26:18][ INFO] [AuthPage______________________] Status------------------------------- - [SHOULD] text contains string 'User not found.'

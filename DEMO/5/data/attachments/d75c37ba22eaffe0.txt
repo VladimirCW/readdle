@@ -1,0 +1,5 @@
+[09-01T13:15:36][ INFO] [NotesPage_____________________] select field 'title'
+[09-01T13:15:36][ INFO] [NotesPage_____________________] search 'UI-LS-3f9f4c01-6eb7-4782-aadf-e16ec15454f3'
+[09-01T13:15:36][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-LS-3f9f4c01-6eb7-4782-aadf-e16ec15454f3'
+[09-01T13:15:36][ INFO] [NotesPage_____________________] search 'UI-LS-3f9f4c01-6eb7-4782-aadf-e16ec15454f3 Charlie'
+[09-01T13:15:36][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-LS-3f9f4c01-6eb7-4782-aadf-e16ec15454f3 Charlie'

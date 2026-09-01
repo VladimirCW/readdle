@@ -1,0 +1,8 @@
+[09-01T13:15:30][ INFO] [NotesPage_____________________] create note 'UI-N04-99ee760b-8e23-4f7f-9f91-5f8f4efc1830'
+[09-01T13:15:30][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N04-99ee760b-8e23-4f7f-9f91-5f8f4efc1830'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: 'original'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:15:31][ INFO] [NotesPage_____________________] open edit modal for 'UI-N04-99ee760b-8e23-4f7f-9f91-5f8f4efc1830'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Modal > Title Input------------------ - fill: 'UI-N04-99ee760b-8e23-4f7f-9f91-5f8f4efc1830-should-not-save'
+[09-01T13:15:31][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'
+[09-01T13:15:31][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/4152f6b6-3d99-47b2-9014-37e3861ec1f2'

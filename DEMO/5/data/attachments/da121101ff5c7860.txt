@@ -1,0 +1,7 @@
+[09-01T13:15:31][ INFO] [NotesPage_____________________] create note 'UI-N05-cc39db4b-bab9-4c69-b7b8-8805883dc6ad'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N05-cc39db4b-bab9-4c69-b7b8-8805883dc6ad'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: 'to delete'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:15:31][ INFO] [NotesPage_____________________] open delete modal for 'UI-N05-cc39db4b-bab9-4c69-b7b8-8805883dc6ad'
+[09-01T13:15:31][ INFO] [NotesPage_____________________] Status------------------------------- - [SHOULD] text contains string 'Note deleted.'
+[09-01T13:15:32][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'

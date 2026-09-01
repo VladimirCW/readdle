@@ -1,0 +1,1 @@
+[09-01T13:25:28][ INFO] [AuthApiService] - Sending [PATCH ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/me'

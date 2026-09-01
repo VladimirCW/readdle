@@ -1,0 +1,4 @@
+[09-01T13:25:44][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'
+[09-01T13:25:44][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/2e3084d1-a47f-48ea-b628-3e39da5dfb9f'
+[09-01T13:25:44][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/f0bfd38c-7476-4e19-8d22-0bc6596186e7'
+[09-01T13:25:44][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/ad916812-ea83-44c1-b61a-a55d0737df48'

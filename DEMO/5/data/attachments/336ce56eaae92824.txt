@@ -1,0 +1,7 @@
+[09-01T13:15:14][ INFO] [AuthPage______________________] go to URL: 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/'
+[09-01T13:15:15][ INFO] [AuthPage______________________] sign in as 'aqa-account-ui@example.com'
+[09-01T13:15:15][ INFO] [AuthPage______________________] Sign In Email------------------------ - fill: 'aqa-account-ui@example.com'
+[09-01T13:15:15][ INFO] [AuthPage______________________] Sign In Password--------------------- - fill: 'wrong-password-123'
+[09-01T13:15:15][ INFO] [AuthPage______________________] Sign In Submit----------------------- - click
+[09-01T13:15:15][ INFO] [AuthPage______________________] Status------------------------------- - [SHOULD] text contains string 'Invalid credentials.'
+[09-01T13:15:16][ INFO] [AuthPage______________________] Auth Section------------------------- - [SHOULD] [BE] visible

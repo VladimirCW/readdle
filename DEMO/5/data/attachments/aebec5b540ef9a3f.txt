@@ -1,0 +1,4 @@
+[09-01T13:14:45][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/confirm'
+[09-01T13:14:45][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/confirm'
+[09-01T13:14:45][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/confirm'
+[09-01T13:14:45][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/confirm'

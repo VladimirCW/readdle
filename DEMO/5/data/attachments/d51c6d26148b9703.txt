@@ -1,0 +1,8 @@
+[09-01T13:15:40][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Notes'
+[09-01T13:15:40][ INFO] [NotesPage_____________________] open profile
+[09-01T13:15:40][ INFO] [NotesPage_____________________] Nav Profile-------------------------- - click
+[09-01T13:15:40][ INFO] [ProfilePage___________________] Account Title------------------------ - [SHOULD] text contains string 'Profile'
+[09-01T13:15:40][ INFO] [ProfilePage___________________] Profile Email------------------------ - [SHOULD] text contains string 'aqa-account-ui@example.com'
+[09-01T13:15:40][ INFO] [ProfilePage___________________] open notes
+[09-01T13:15:40][ INFO] [ProfilePage___________________] Nav Notes---------------------------- - click
+[09-01T13:15:40][ INFO] [NotesPage_____________________] Account Title------------------------ - [SHOULD] text contains string 'Notes'

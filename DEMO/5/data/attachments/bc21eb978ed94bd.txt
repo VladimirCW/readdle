@@ -1,0 +1,5 @@
+[09-01T13:15:37][ INFO] [NotesPage_____________________] search 'UI-LP-6a1ec60f-6521-4c1c-a554-1f98b438ce9d'
+[09-01T13:15:37][ INFO] [NotesPage_____________________] Search Query------------------------- - fill: 'UI-LP-6a1ec60f-6521-4c1c-a554-1f98b438ce9d'
+[09-01T13:15:37][ INFO] [NotesPage_____________________] select page size '5'
+[09-01T13:15:37][ INFO] [NotesPage_____________________] Prev Page---------------------------- - [SHOULD] [BE] disabled
+[09-01T13:15:37][ INFO] [NotesPage_____________________] Next Page---------------------------- - [SHOULD] [NOT] [BE] disabled

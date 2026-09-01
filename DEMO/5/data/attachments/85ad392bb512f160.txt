@@ -1,0 +1,7 @@
+[09-01T13:15:32][ INFO] [NotesPage_____________________] create note 'UI-N06-b4f927a5-d8ed-48e3-bbfc-ed22c5c6cfcf'
+[09-01T13:15:32][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N06-b4f927a5-d8ed-48e3-bbfc-ed22c5c6cfcf'
+[09-01T13:15:32][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: 'keep me'
+[09-01T13:15:32][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:15:32][ INFO] [NotesPage_____________________] open delete modal for 'UI-N06-b4f927a5-d8ed-48e3-bbfc-ed22c5c6cfcf'
+[09-01T13:15:32][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'
+[09-01T13:15:32][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/cff2ac2d-2c81-46f9-97fe-70d0c4b81e46'

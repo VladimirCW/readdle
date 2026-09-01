@@ -1,0 +1,8 @@
+[09-01T13:15:27][ INFO] [AuthApiService] - Sending [POST  ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/auth/signin'
+[09-01T13:15:28][ INFO] [NotesPage_____________________] create note 'UI-N01-e155e29e-3423-4f09-b62b-e57a63822732'
+[09-01T13:15:28][ INFO] [NotesPage_____________________] Note Title--------------------------- - fill: 'UI-N01-e155e29e-3423-4f09-b62b-e57a63822732'
+[09-01T13:15:28][ INFO] [NotesPage_____________________] Note Content------------------------- - fill: 'content body'
+[09-01T13:15:28][ INFO] [NotesPage_____________________] Create Note-------------------------- - click
+[09-01T13:15:28][ INFO] [NotesPage_____________________] Status------------------------------- - [SHOULD] text contains string 'Note created.'
+[09-01T13:15:28][ INFO] [NotesApiService] - Sending [GET   ] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes'
+[09-01T13:15:28][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/367c0e13-4ea8-41e8-b3b6-5e5e7013d0da'

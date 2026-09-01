@@ -1,0 +1,3 @@
+[09-01T13:15:06][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/non-existent-id-1234'
+[09-01T13:15:06][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/fa25924f-3dcb-4776-97fd-da8dd2d472bc'
+[09-01T13:15:06][ INFO] [NotesApiService] - Sending [DELETE] request to 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444/api/notes/e94c86c0-0cdb-4693-8911-39e72c017a57'
