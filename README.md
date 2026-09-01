@@ -8,7 +8,6 @@ Automated **API** and **UI E2E** test suites for the notes application (Symfony 
 The full, reviewable list of scenarios lives in **[TEST_CASES.md](documentation/TEST_CASES.md)** (also documents the automation status and the defects found).
 
 [![Tests](https://github.com/VladimirCW/readdle/actions/workflows/ci.yml/badge.svg)](https://github.com/VladimirCW/readdle/actions/workflows/ci.yml)
-[![Test summary](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml/badge.svg)](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml)
 
 ## Application under test
 
@@ -26,12 +25,14 @@ Read-only smoke account: `test@test.test` / `12345678`. All other accounts are p
 - **axios** service layer for the API suite; Playwright's browser driver for UI.
 - **Page Object Model** for the UI, built on the framework's element controllers (`src/controlers`, `src/helpers/element.ts`).
 - **MailHog HTTP API** integration to read sign-up confirmation codes.
+- **[Allure](https://allurereport.org)** reporting (`allure-playwright`) — one merged API + UI report, published to GitHub Pages with history & trends.
 - **log4js** logging, **dotenv** config, **ESLint** for static analysis.
 
 ## Prerequisites
 
 - **Node.js 20+** (developed/tested on 20 and 22)
 - npm
+- **Java 8+** — *optional*, only to render an Allure report **locally** (`npm run allure:serve`). The Allure 2 CLI is a Java tool; the CI-published report needs nothing installed.
 
 ## Setup
 
@@ -72,6 +73,22 @@ npm run lint        # ESLint
 
 A **global setup** (`src/tests/global-setup.ts`) runs once before any test to health-check the API and idempotently provision the dedicated accounts.
 
+### Allure report
+
+Every run also writes raw Allure results to `allure-results/` (in addition to the Playwright HTML report). To render them locally — needs [Java](#prerequisites):
+
+```bash
+npm run allure:clean    # wipe allure-results/ + allure-report/ FIRST — see the note below
+npm test                # (or test:api / test:e2e) — writes allure-results/
+npm run allure:serve    # generate + open in one step (temporary report)
+
+npm run allure:report   # or: generate into allure-report/ and open that
+```
+
+> **Note:** the reporter **appends** to `allure-results/` and never cleans it, which is deliberate — it is what lets `npm run test:api` and `npm run test:e2e` (two separate Playwright processes, exactly like the two CI jobs) merge into **one** report. The flip side is that results from *earlier* runs also linger, so run `npm run allure:clean` before a run you intend to report on.
+
+In CI you never need any of this — the report is generated and published for you, see [Results in CI](#results-in-ci).
+
 ## Running in Docker
 
 The image is based on the official Playwright image (browsers preinstalled), with `ENTRYPOINT ["npm", "run"]` and `CMD ["test"]` — so the container runs `npm run test` by default, and any argument after the image name replaces the script name:
@@ -101,8 +118,10 @@ docker run --rm -v "$(pwd)/environments/.env:/app/environments/.env:ro" readdle-
 docker run --rm \
   -v "$(pwd)/playwright-report:/app/playwright-report" \
   -v "$(pwd)/test-results:/app/test-results" \
+  -v "$(pwd)/allure-results:/app/allure-results" \
   readdle-tests
 # ...then open the HTML report on the host as usual:  npm run report
+# (or render the Allure results on the host:          npm run allure:serve)
 ```
 
 > **Note:** `test:ui` launches Playwright's interactive UI mode, which is not usable in a headless container as-is. To use it, expose the UI server and open it in your browser:
@@ -135,11 +154,34 @@ Keep the two audiences separate: in `environments/.env` (local runs) use `http:/
 
 - The 2 API skips (`API-CF-05` code expiry, `API-ME-04` expired JWT) require time control not available against the deployed instance — see [TEST_CASES.md §8.1](documentation/TEST_CASES.md).
 - One case (`API-NC-11`) is intentionally marked *expected-to-fail* to encode a real open defect (see [Findings](#findings)); the suite stays green while keeping the bug visible.
-- After each run, an HTML report is written to `playwright-report/` (`npm run report` to open); traces/screenshots for failures land in `test-results/`.
+- After each run, an HTML report is written to `playwright-report/` (`npm run report` to open) and raw Allure results to `allure-results/` ([`npm run allure:serve`](#allure-report) to render); traces/screenshots for failures land in `test-results/`.
 
 ### Results in CI
 
-Every CI run of **Tests** is followed by the **[Test summary](https://github.com/VladimirCW/readdle/actions/workflows/test-summary.yml)** workflow, which publishes passed / failed / flaky / skipped counts per suite (plus the list of failed tests) to its run's **Summary** page. GitHub has no permalink to "the latest summary", but that link lists runs newest-first — open the top run to see the latest one. The Playwright HTML reports are attached to the corresponding **Tests** run as the `playwright-report-api` / `playwright-report-ui` artifacts.
+Everything a run produces lands on **that run's own page** in the [**Tests**](https://github.com/VladimirCW/readdle/actions/workflows/ci.yml) workflow — one dispatch, one run, one place to look:
+
+- Its **Summary** page carries the passed / failed / flaky / skipped counts per suite plus the list of failed tests (written by the `summary` job), and the links to the Allure report below it (written by the `allure` job).
+- The Playwright HTML reports are attached to the same run as the `playwright-report-api` / `playwright-report-ui` artifacts, alongside `allure-results-*` and, for failures, `test-results-*` (traces + screenshots).
+
+#### Allure report on GitHub Pages
+
+The **Tests** workflow also publishes a browsable **Allure report** to GitHub Pages, from the same run — no separate workflow and no test re-run. Its `allure` job downloads the Allure results of **both** test jobs, merges them into one results set, and generates a single report covering the whole run, so API and UI share one set of trend charts:
+
+- **One report per target environment**, under a subfolder — a `DEMO` run lands at `https://<owner>.github.io/readdle/DEMO/` — so a run against one environment can never overwrite another's report *or* its trend history.
+- **The root** `https://<owner>.github.io/readdle/` is a landing page linking every environment's latest report, generated by [`allure-landing.mjs`](.github/scripts/allure-landing.mjs).
+- **History & trends persist**: the previous report tree is pulled from the `gh-pages` branch before generating, and the last **30** runs per environment are kept.
+- Both links are written to the run's **Summary** page too, so the report is one click from the run that produced it.
+- Re-publishing without re-running the suite: open the run and use **Re-run jobs** on the `allure` job alone (works while that run's artifacts are inside their 7-day retention window).
+
+**One-time repo setup** — the header comment in [`ci.yml`](.github/workflows/ci.yml) has the full detail:
+
+1. **Settings → Actions → General → Workflow permissions** → *Read and write permissions* (lets the job push `gh-pages`).
+2. Run the workflow once, so the `gh-pages` branch gets created.
+3. **Settings → Pages → Source** — either option works, the workflow detects which one is live:
+   - *GitHub Actions* (recommended) — the `deploy-pages` job serves the site, so one dispatch stays one run in the Actions list. Also add this workflow's branch under **Settings → Environments → github-pages**; that environment ships allowing only `gh-pages`, which is not the branch the workflow runs on, and a missed step blocks the job with a protection-rule error.
+   - *Deploy from a branch* → `gh-pages` / `(root)` — GitHub builds the push itself in its own extra run, and `deploy-pages` skips.
+
+> **Exposure:** a Pages site is **public on the internet** unless the org is on GitHub Enterprise Cloud with private Pages enabled — check with `gh api repos/<owner>/readdle/pages --jq .public`; a private site is served from a random `*.pages.github.io` host that requires a signed-in account with read access. The report carries environment URLs, test data and failure screenshots, so re-check this whenever Pages is reconfigured.
 
 ## Project structure
 
@@ -159,8 +201,9 @@ src/
     ui/           # *.spec.ts — one file per user flow
 environments/     # .env / .env.example
 .github/
-  workflows/      # ci.yml (tests, manual trigger) + test-summary.yml
-  scripts/        # pw-summary.mjs (run summary) + set-dotenv-secret.ps1 (upload DOTENV_B64_* secret)
+  workflows/      # ci.yml — the only workflow: tests + summary + Allure/Pages publish
+  scripts/        # pw-summary.mjs (run summary), allure-landing.mjs (Pages root page),
+                  # set-dotenv-secret.ps1 (upload DOTENV_B64_* secret)
 documentation/
   TEST_CASES.md   # the reviewable test-case catalogue + status
 ```
@@ -185,8 +228,12 @@ GitHub Actions — [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 - Configuration: each job materializes `environments/.env` before the run — from the per-environment secret `DOTENV_B64_<APP_ENV>` when it exists (the whole `.env` file, base64-encoded, e.g. `base64 -w0 environments/.env`; `<APP_ENV>` is chosen by the `app_env` dispatch input, default `DEMO`), otherwise from repository **Variables** / the deployed-instance defaults — no secrets needed for the public demo instance.
 - The optional `test_host` dispatch input retargets a single run at another instance (scheme + host, no port — `:4444`/`:8025` URLs are derived from it). It is exported as real env vars, so it takes precedence over everything: the `DOTENV_B64` secret, repository Variables, and the defaults.
 - `CI=true` enables one retry (absorbs transient blips on the shared instance), a GitHub reporter for inline annotations, and a JSON report (`playwright-report/report.json`).
-- Artifacts: HTML report per job, plus traces/screenshots on failure.
-- After each run, a companion **Test summary** workflow ([`test-summary.yml`](.github/workflows/test-summary.yml)) parses the uploaded JSON reports via [`pw-summary.mjs`](.github/scripts/pw-summary.mjs) and publishes per-suite pass/fail/flaky/skipped counts plus the list of failed tests to its run's Summary page — no test re-run needed. (`workflow_run` only fires for workflow files on the repo's default branch.)
+- Artifacts: HTML report and Allure results per job, plus traces/screenshots on failure.
+- Three reporting jobs close the run, all reading the artifacts the test jobs uploaded — no test re-run:
+  - **summary** parses the JSON reports via [`pw-summary.mjs`](.github/scripts/pw-summary.mjs) and writes per-suite pass/fail/flaky/skipped counts plus the failed-test list to the run's Summary page.
+  - **allure** merges both jobs' Allure results into one report and pushes it to `gh-pages`; **deploy-pages** serves it. See [Allure report on GitHub Pages](#allure-report-on-github-pages) for the layout and the one-time setup.
+  - All of them run even when a suite failed (that is when reports matter most); only a *cancelled* run publishes nothing.
+- **One workflow, one run.** The summary and the Allure publish used to be separate workflows chained on `workflow_run`, which meant one dispatch produced several runs and the counts landed on a different page than the tests that produced them. Folding them in also fixed a real gap: `workflow_run` only fires for workflow files on the repo's **default** branch, so the old summary silently never ran for a dispatch from a feature branch.
 
 ### `DOTENV_B64_<APP_ENV>` — per-environment config secret
 
