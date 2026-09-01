@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       app_env:
-        description: 'Environment key — selects the DOTENV_B64_<APP_ENV> secret holding environments/.env (base64). If that secret is not set, repository Variables / deployed-instance defaults are used.'
+        description: 'Environment key — selects the DOTENV_B64_<APP_ENV> secret holding environments/.env (base64). If that secret is not set, repository Variables / deployed-instance defaults are used. Also the subfolder the Allure report is published under.'
         required: false
         default: 'DEMO'
       test_host:
@@ -14,10 +14,15 @@ on:
         required: false
         default: ''
 
-# Cancel superseded runs on the same ref.
+# Cancel superseded runs on the same ref. The `allure` job carries its OWN
+# concurrency group on top of this one — see the note there.
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Least privilege by default; the `allure` and `deploy-pages` jobs raise their own.
+permissions:
+  contents: read
 
 # Test configuration is materialized into environments/.env by the "Write
 # environments/.env" step in each job — either from the per-environment secret
@@ -31,6 +36,56 @@ concurrency:
 env:
   APP_ENV: ${{ github.event.inputs.app_env || 'DEMO' }}
 
+# ---------------------------------------------------------------------------------------
+# JOBS: two test jobs, then three reporting jobs — read this before adding or moving one
+# ---------------------------------------------------------------------------------------
+#   api-tests ──┐   ┌──> summary
+#               ├───┤
+#   ui-tests  ──┘   └──> allure ──> deploy-pages
+#
+# EVERYTHING A RUN PRODUCES LIVES IN THIS WORKFLOW. The pass/fail summary used to be a
+# separate workflow (test-summary.yml) chained on `workflow_run`, so one dispatch produced
+# TWO runs in the Actions list and the counts landed on a different page than the tests
+# that produced them. It is the `summary` job here now: one dispatch, one run, one page.
+# The Pages deployment (deploy-pages) is the same story — see that job for why it is
+# conditional. Two consequences worth knowing:
+#   * `workflow_run` only fires for workflow files on the repo's DEFAULT branch, so the
+#     old summary never ran for a dispatch from a feature branch. This one always does.
+#   * the artifact round-trip stays anyway: `summary` and `allure` read what the test jobs
+#     uploaded rather than re-running anything, which is also what makes "Re-run jobs" on
+#     a single reporting job a cheap way to republish.
+#
+# Both test jobs emit Allure results (the 'allure-playwright' reporter in
+# playwright.config.ts writes ./allure-results) and upload them as
+# allure-results-api / allure-results-ui. The `allure` job downloads BOTH, merges them
+# into a single results folder, and generates ONE report covering the whole run — so
+# API and UI results live under one set of trend charts instead of two.
+#
+# ONE-TIME REPO SETUP for the published report (Settings):
+#   1. Actions -> General -> Workflow permissions -> "Read and write permissions"
+#      (lets the `allure` job push the gh-pages branch).
+#   2. Run this workflow once, so the gh-pages branch is created.
+#   3. Pages -> Build and deployment -> Source. Either source works, and the workflow
+#      detects which one is live (see `deploy-pages`):
+#        * "GitHub Actions" (recommended) — the `deploy-pages` job below serves the
+#          site, so one dispatch = one run in the Actions list. Also requires
+#          Settings -> Environments -> github-pages -> add this workflow's branch to the
+#          deployment-branch policy; it ships allowing only `gh-pages`, which is NOT the
+#          branch this workflow runs on, and a missed step blocks the job before its
+#          first step with a protection-rule error.
+#        * "Deploy from a branch" -> gh-pages / (root) — GitHub builds the branch push
+#          itself, in its own separate pages-build-deployment run; `deploy-pages` skips.
+#
+# Reports are served per target environment under a subfolder, e.g. the report for a
+# DEMO run is at https://<owner>.github.io/<repo>/DEMO/ , and the bare root
+# https://<owner>.github.io/<repo>/ is a landing page linking every environment's
+# report (built by .github/scripts/allure-landing.mjs).
+#
+# EXPOSURE: a GitHub Pages site is PUBLIC on the internet unless the org is on GitHub
+# Enterprise Cloud with private Pages enabled — check with
+# `gh api repos/<owner>/<repo>/pages --jq .public`. The report carries environment
+# URLs, test data and failure screenshots, so re-check that whenever Pages is
+# reconfigured.
 jobs:
   api-tests:
     name: API tests
@@ -56,9 +111,9 @@ jobs:
         env:
           DOTENV_B64: ${{ secrets[format('DOTENV_B64_{0}', env.APP_ENV)] }}
           TEST_HOST_INPUT: ${{ github.event.inputs.test_host }}
-          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
+          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:8025' }}
         run: |
           if [ -n "$DOTENV_B64" ]; then
             printf '%s' "$DOTENV_B64" | base64 -d > environments/.env
@@ -97,6 +152,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      # Raw Allure results (NOT a browsable report) — the `allure` job merges these
+      # with the UI job's and generates the report from both. Suffixed -api because
+      # artifact names must be unique within a run; the `allure` job globs them back
+      # together with `pattern: allure-results-*` + `merge-multiple`.
+      - name: Upload Allure results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-api
+          path: allure-results/
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload traces & screenshots
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -127,9 +195,9 @@ jobs:
         env:
           DOTENV_B64: ${{ secrets[format('DOTENV_B64_{0}', env.APP_ENV)] }}
           TEST_HOST_INPUT: ${{ github.event.inputs.test_host }}
-          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:4444' }}
-          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-190-172.us-east-2.compute.amazonaws.com:8025' }}
+          FALLBACK_API_BASE_URL: ${{ vars.API_BASE_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_BASE_URL: ${{ vars.BASE_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:4444' }}
+          FALLBACK_MAILHOG_URL: ${{ vars.MAILHOG_URL || 'http://ec2-18-220-141-210.us-east-2.compute.amazonaws.com:8025' }}
         run: |
           if [ -n "$DOTENV_B64" ]; then
             printf '%s' "$DOTENV_B64" | base64 -d > environments/.env
@@ -181,6 +249,16 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      # See the api-tests counterpart.
+      - name: Upload Allure results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-ui
+          path: allure-results/
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload traces & screenshots
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -188,3 +266,320 @@ jobs:
           name: test-results-ui
           path: test-results/
           retention-days: 7
+
+  # =======================================================================================
+  # TEST SUMMARY — pass/fail counts on THIS run's Summary page
+  # =======================================================================================
+  # Was the separate "Test summary" workflow. Pure JSON parsing of what the test jobs
+  # already uploaded — no test re-run — so it is quick and independent of the `allure`
+  # job; the two run in parallel and each writes its own section of the run's Summary
+  # page.
+  summary:
+    name: Test summary
+    needs: [api-tests, ui-tests]
+    # Not `success()`: reporting a FAILED suite is the whole point. A job that died before
+    # producing a report still yields the honest "⚠️ Report missing" row.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # This repo, for .github/scripts/pw-summary.mjs.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Same-run downloads: no run-id and no github-token needed — both were only there
+      # because this used to be a different run reaching back into the test run.
+      # continue-on-error so a missing artifact still lets the parse step below emit the
+      # friendly "no report" row instead of failing the job.
+      - name: Download API report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-api
+          path: reports/api
+
+      - name: Download UI report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-ui
+          path: reports/ui
+
+      # Run context, was github.event.workflow_run.* — now this run's own. No RUN_URL: the
+      # summary is rendered on that very run's page, so a link back would point at itself.
+      # RUN_CONCLUSION keeps BOTH job results rather than AND-ing them to one word — a job
+      # that failed before writing a report shows only "—" in the table, so its own status
+      # is the part the counts cannot tell you.
+      - name: Build summary
+        env:
+          RUN_CONCLUSION: API ${{ needs['api-tests'].result }} / UI ${{ needs['ui-tests'].result }}
+          RUN_ACTOR: ${{ github.actor }}
+          RUN_BRANCH: ${{ github.ref_name }}
+        run: node .github/scripts/pw-summary.mjs "API=reports/api/report.json" "UI E2E=reports/ui/report.json"
+
+  # =======================================================================================
+  # ALLURE REPORT — browsable report to GitHub Pages
+  # =======================================================================================
+  # Generates the Allure HTML from the API + UI results and pushes it to the gh-pages
+  # branch. Prior report history is pulled from gh-pages first, so the trend / retry
+  # charts accumulate across runs.
+  #
+  # Re-publishing WITHOUT re-running the suite: open the run in Actions and use
+  # "Re-run jobs" on this job alone — it re-downloads that same run's artifacts and
+  # republishes. Works while the run's artifacts are inside the retention window above.
+  allure:
+    name: Allure report
+    needs: [api-tests, ui-tests]
+    # Not `success()`: the whole point is to publish a report for a FAILED suite. A
+    # cancelled run is the one case with nothing worth publishing.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # More than the workflow-level `contents: read`: contents:write pushes the gh-pages
+    # branch, pages:read lets "Resolve Pages URL" look up the published site's real host.
+    permissions:
+      contents: write
+      pages: read
+    # A SECOND concurrency group, on top of the workflow-level one. That group is keyed
+    # on the ref, so two runs on different branches would reach this job at the same time
+    # and race each other's force-push of the shared gh-pages branch — one publish would
+    # simply be lost. This group is repository-wide, and cancel-in-progress: false so the
+    # later run waits for the publish instead of killing it mid-push.
+    concurrency:
+      group: allure-publish-${{ github.repository }}
+      cancel-in-progress: false
+    # Read by deploy-pages to decide whether Pages is set to deploy from THIS workflow
+    # or is still building the gh-pages branch by itself.
+    outputs:
+      has_results: ${{ steps.check.outputs.has_results }}
+      pages_build_type: ${{ steps.pages.outputs.build_type }}
+    steps:
+      # This repo, for .github/scripts/allure-landing.mjs plus a Node runtime for it.
+      # FIRST step, so the workspace is empty and the checkout cannot clobber the
+      # artifact / gh-pages folders pulled into subdirs below.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Both suites' results into ONE folder: Allure result files are UUID-named, so
+      # merge-multiple cannot collide on them. environment.properties IS written by both
+      # jobs, with identical content (same env vars) — whichever lands last wins, which
+      # is the same file either way. continue-on-error so a missing artifact (e.g. a job
+      # crashed before reporting) doesn't fail the job; the guard below makes it a no-op.
+      - name: Download Allure results (API + UI)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-*
+          path: allure-results
+          merge-multiple: true
+
+      - name: Check for results
+        id: check
+        run: |
+          if [ -n "$(ls -A allure-results 2>/dev/null)" ]; then
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+            echo "Merged $(ls allure-results | wc -l) result file(s) from the API + UI jobs."
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+            echo "No allure-results artifacts found — nothing to publish."
+          fi
+
+      # The report is published under a per-environment subfolder so a DEMO run cannot
+      # overwrite another environment's report or its trend history. APP_ENV comes from a
+      # free-text dispatch input, so it is read from the ENV VAR (never inlined as
+      # ${{ }}, which would be a shell-injection hole) and stripped to path-safe chars.
+      - name: Resolve target environment
+        id: envname
+        if: steps.check.outputs.has_results == 'true'
+        run: |
+          name=$(printf '%s' "$APP_ENV" | tr -cd '[:alnum:]._-')
+          if [ -z "$name" ]; then name="unknown"; fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "Publishing report under subfolder: $name"
+
+      # Resolve the ACTUAL Pages host and hand it to the Allure action as report_url.
+      # Otherwise the action bakes the CANONICAL host (<owner>.github.io/<repo>) into the
+      # /<env>/ redirect and every trend/history link — which on a private-Pages site
+      # (served from a random *.pages.github.io subdomain) only works via an extra
+      # cross-domain 301. report_url must include the env subfolder because it REPLACES
+      # the whole URL (the action's own subfolder suffix is dropped once it is set).
+      # Empty output -> the action falls back to the canonical host.
+      - name: Resolve Pages URL
+        id: pages
+        if: steps.check.outputs.has_results == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENV_NAME: ${{ steps.envname.outputs.name }}
+        run: |
+          # Two answers from the same endpoint: the host to link, and HOW Pages builds.
+          # build_type is 'workflow' when Settings -> Pages -> Source is "GitHub Actions"
+          # (deploy-pages below serves the site), 'legacy' when it is "Deploy from a
+          # branch" (GitHub builds the gh-pages push itself, in a separate run).
+          # `|| var=""`, NOT `|| true`: on a 404 (Pages not enabled yet) gh prints the
+          # error BODY to stdout and exits 1, so `|| true` would leave a JSON blob in the
+          # variable and sail straight past the `-n` guard below into report_url.
+          base=$(gh api "repos/${{ github.repository }}/pages" --jq '.html_url' 2>/dev/null) || base=""
+          build_type=$(gh api "repos/${{ github.repository }}/pages" --jq '.build_type' 2>/dev/null) || build_type=""
+          case "$base" in https://*) ;; *) base="" ;; esac
+          base="${base%/}"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "build_type=$build_type" >> "$GITHUB_OUTPUT"
+          echo "Pages build type: ${build_type:-unknown}"
+          if [ -n "$base" ]; then
+            echo "report_url=$base/$ENV_NAME" >> "$GITHUB_OUTPUT"
+            echo "Report URL: $base/$ENV_NAME"
+          else
+            echo "report_url=" >> "$GITHUB_OUTPUT"
+            echo "Pages URL not resolvable yet — links will use the canonical host until Pages is queryable."
+          fi
+
+      # Bring the existing report history down so trends persist. The first run has no
+      # gh-pages branch yet; continue-on-error handles that.
+      - name: Load report history
+        if: steps.check.outputs.has_results == 'true'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      # Generates allure-history/<env>/ = numbered per-run reports + a redirect to the
+      # latest, merging in the prior history from gh-pages. The action first copies the
+      # WHOLE existing gh-pages tree into allure-history (so every OTHER env's subfolder
+      # survives the force_orphan publish below), then regenerates only this env's
+      # subfolder. keep_reports caps retained runs PER env.
+      - name: Generate Allure report (with history)
+        if: steps.check.outputs.has_results == 'true'
+        uses: simple-elf/allure-report-action@v1.15
+        with:
+          allure_results: allure-results
+          gh_pages: gh-pages
+          allure_history: allure-history
+          keep_reports: 30
+          subfolder: ${{ steps.envname.outputs.name }}
+          report_url: ${{ steps.pages.outputs.report_url }}
+
+      # The Allure action above runs in Docker as root, so allure-history/ (and the .git
+      # inside it) end up owned by root. The non-root steps below then cannot write into
+      # that tree (EACCES), the publish commit comes up empty, and the push fails with
+      # "src refspec gh-pages does not match any". Reclaim ownership first.
+      - name: Fix report ownership
+        if: steps.check.outputs.has_results == 'true'
+        run: sudo chown -R "$(id -u):$(id -g)" allure-history
+
+      # Reports live one subfolder per env, so the bare Pages root has nothing to serve.
+      # This writes allure-history/index.html — a landing page linking every env folder
+      # present in the tree — into the SAME force_orphan commit as the report; a
+      # separately pushed page would be wiped by the next publish. Runs after the chown
+      # so it can write into the tree.
+      - name: Build root landing page
+        if: steps.check.outputs.has_results == 'true'
+        env:
+          SITE_DIR: allure-history
+          ENV_NAME: ${{ steps.envname.outputs.name }}
+          REPO: ${{ github.repository }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # The suite's verdict, not this job's: 'success' only when BOTH suites passed.
+          RUN_CONCLUSION: ${{ (needs['api-tests'].result == 'success' && needs['ui-tests'].result == 'success') && 'success' || 'failure' }}
+        run: node .github/scripts/allure-landing.mjs
+
+      - name: Publish to GitHub Pages
+        if: steps.check.outputs.has_results == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
+          # Republish as a single rolling commit instead of appending history. Failing
+          # runs embed Playwright traces/screenshots into the report; without this, git
+          # would keep every such blob forever (keep_reports only prunes the working
+          # tree, not history), growing the branch unbounded. The last-30 reports + trend
+          # charts still persist because the tree is rebuilt each run from the prior
+          # checkout.
+          force_orphan: true
+
+      # ---- Pages deployment path (only when Settings -> Pages -> Source = GitHub Actions) ----
+      # The Allure action copies the whole previous gh-pages tree into allure-history,
+      # .git and all, so the branch's own history is sitting in the folder we are about to
+      # serve. peaceiris ignores it; upload-pages-artifact would tar it up and PUBLISH it.
+      - name: Strip .git from the site tree
+        if: steps.check.outputs.has_results == 'true' && steps.pages.outputs.build_type == 'workflow'
+        run: rm -rf allure-history/.git
+
+      # allure-history is already the COMPLETE site — every env's subfolder (merged in by
+      # the Allure action) plus the root landing page — so it is exactly what Pages should
+      # serve. Uploaded as the reserved 'github-pages' artifact deploy-pages consumes.
+      - name: Upload Pages artifact
+        if: steps.check.outputs.has_results == 'true' && steps.pages.outputs.build_type == 'workflow'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-history
+
+      # Put the report links on this run's summary page. Reuses the host resolved in
+      # "Resolve Pages URL" so these links match the ones baked into the report.
+      - name: Link report in run summary
+        if: steps.check.outputs.has_results == 'true'
+        env:
+          ENV_NAME: ${{ steps.envname.outputs.name }}
+          BASE: ${{ steps.pages.outputs.base }}
+        run: |
+          {
+            echo "## 📋 Allure report"
+            echo ""
+            if [ -n "$BASE" ]; then
+              echo "- **[This run's report ($ENV_NAME)]($BASE/$ENV_NAME/)** — merged API + UI results, with history & trends"
+              echo "- **[All environments]($BASE/)** — landing page linking every environment's report"
+              echo ""
+              echo "_Access-controlled — sign in to GitHub with read access to this repository._"
+            else
+              echo "Report published to the \`gh-pages\` branch under \`$ENV_NAME/\`. Enable GitHub Pages (Settings → Pages) to browse it."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # =======================================================================================
+  # DEPLOY PAGES — serve the report from inside this run
+  # =======================================================================================
+  # This is the job that folds GitHub's own `pages-build-deployment` into the pipeline.
+  #
+  # With Pages on "Deploy from a branch", the gh-pages push above makes GitHub generate
+  # and run that workflow itself — a SECOND run in the Actions list for every dispatch.
+  # Set Settings -> Pages -> Source to "GitHub Actions" and GitHub stops auto-building the
+  # branch; the deployment happens here instead, as one more box in this run.
+  #
+  # DUAL MODE, on purpose. The `if` reads the LIVE Pages setting (resolved by the allure
+  # job), so this file supports both sources without an edit:
+  #   * Source = "GitHub Actions"       -> this job runs and deploys.
+  #   * Source = "Deploy from a branch" -> this job SKIPS; GitHub keeps building the branch.
+  # Skipping rather than failing is what makes the setting a safe toggle in either
+  # direction — and a skipped job never evaluates the github-pages environment's
+  # protection rules, so this cannot block a run while Pages is still branch-based.
+  #
+  # The gh-pages branch is written on every run either way. It is no longer the deploy
+  # source once you flip, but it stays the ARCHIVE the next run reads its history and
+  # trends out of ("Load report history"), so it cannot be dropped — and it is what makes
+  # flipping back a one-click, zero-loss rollback.
+  deploy-pages:
+    name: Deploy Pages
+    needs: allure
+    if: needs.allure.outputs.has_results == 'true' && needs.allure.outputs.pages_build_type == 'workflow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Narrower than the allure job: this one only creates the deployment, it never writes
+    # to the repo. id-token is the OIDC token deploy-pages exchanges for a deployment.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

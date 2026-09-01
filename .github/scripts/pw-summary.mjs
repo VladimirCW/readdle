@@ -2,7 +2,7 @@
 // (per-suite pass/fail counts + the list of failed tests) to $GITHUB_STEP_SUMMARY.
 //
 // Usage: node pw-summary.mjs "<Label>=<path-to-report.json>" [...]
-// Consumed by .github/workflows/test-summary.yml (the "Test summary" workflow).
+// Consumed by the "summary" job in .github/workflows/ci.yml.
 
 import { readFileSync, appendFileSync } from 'node:fs';
 
@@ -140,7 +140,7 @@ out('');
 for (const r of results.filter((x) => x.missing)) {
     out(
         `> ⚠️ **${r.label}**: could not read the JSON report at \`${r.path}\` (${r.error}). ` +
-            'The job likely crashed before producing a report — check the triggering run for details.'
+            'That suite likely crashed before producing a report — check its job log in this run for details.'
     );
     out('');
 }

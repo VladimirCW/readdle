@@ -5,6 +5,8 @@ node_modules
 /test-results/
 /playwright-report/
 /blob-report/
+/allure-results/
+/allure-report/
 /playwright/.cache/
 
 # Local config / secrets — pass via `docker run -e` instead

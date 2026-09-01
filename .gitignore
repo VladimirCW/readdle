@@ -2,6 +2,10 @@ node_modules
 /test-results/
 /playwright-report/
 /blob-report/
+# Allure: raw results written by the allure-playwright reporter, and the
+# browsable report generated from them (`npm run allure:generate`).
+/allure-results/
+/allure-report/
 /playwright/.cache/
 /environments/.env
 # local per-environment dotenv files (sources for DOTENV_B64_* secrets)
